@@ -4,47 +4,49 @@ import { Camera } from 'expo-camera';
 import * as Permissions from 'expo-permissions';
 import Toolbar from './toolbar.component';
 import Gallery from './gallery.component';
+import React, { useState, useEffect } from 'react';
 
 import styles from './styles';
 
-export default class CameraPage extends React.Component {
+const CameraPage = () => {
     camera = null;
-    state = {
-        captures: [],
-        // setting flash to be turned off by default
-        flashMode: Camera.Constants.FlashMode.off,
-        capturing: null,
-        // start the back camera by default
-        cameraType: Camera.Constants.Type.back,
-        hasCameraPermission: null,
-    };
+    let [captures, setCaptures] = useState([]);
+    let [flashMode, setFlashModeH] = useState(Camera.Constants.FlashMode.off);
+    let [capturing, setCapturing] = useState(null);
+    let [cameraType, setCameraTypeH] = useState(Camera.Constants.Type.back);
+    let [hasCameraPermission, sethasCameraPermission] = useState(null);
 
-    setFlashMode = (flashMode) => this.setState({ flashMode });
-    setCameraType = (cameraType) => this.setState({ cameraType });
-    handleCaptureIn = () => this.setState({ capturing: true });
+    setFlashMode = (flashMode) => setFlashModeH(flashMode);
+    setCameraType = (cameraType) => setCameraTypeH(cameraType);
+    handleCaptureIn = () => setCapturing(true);
 
     handleCaptureOut = () => {
-        if (this.state.capturing)
+        if (capturing)
             this.camera.stopRecording();
     };
 
     handleShortCapture = async () => {
         const photoData = await this.camera.takePictureAsync();
-        this.setState({ capturing: false, captures: [photoData, ...this.state.captures] })
+        setCapturing(false);
+        setCaptures([photoData, ...this.state.captures]);
     };
 
     handleLongCapture = async () => {
         const videoData = await this.camera.recordAsync();
-        this.setState({ capturing: false, captures: [videoData, ...this.state.captures] });
+        setCapturing(false);
+        setCaptures([videoData, ...this.state.captures])
     };
 
     async componentDidMount() {
+        console.disableYellowBox = true;
+        
+        useEffect(async () =>  {
         const camera = await Permissions.askAsync(Permissions.CAMERA);
         const audio = await Permissions.askAsync(Permissions.AUDIO_RECORDING);
         const hasCameraPermission = (camera.status === 'granted' && audio.status === 'granted');
 
-        this.setState({ hasCameraPermission });
-    };
+        sethasCameraPermission(hasCameraPermission);
+    }, []);
 
     render() {
         const { hasCameraPermission, flashMode, cameraType, capturing, captures } = this.state;
@@ -58,15 +60,15 @@ export default class CameraPage extends React.Component {
 
         return (
             <React.Fragment>
-<View>
-                    <Camera
-                        type={cameraType}
-                        flashMode={flashMode}
-                        style={styles.preview}
-                        ref={camera => this.camera = camera}
-                    />
-                </View>
-                {captures.length > 0 && <Gallery captures={captures}/>}
+            <View>
+                <Camera
+                    type={cameraType}
+                    flashMode={flashMode}
+                    style={styles.preview}
+                    ref={camera => this.camera = camera}
+                />
+            </View>
+                 {captures.length > 0 && <Gallery captures={captures}/>}
                 <Toolbar 
                     capturing={capturing}
                     flashMode={flashMode}
